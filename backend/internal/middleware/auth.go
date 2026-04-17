@@ -57,7 +57,7 @@ func IsAdmin() gin.HandlerFunc {
 		role, exists := c.Get("role")
 
 		// 逻辑判断：如果角色不是管理员（假设 1 为管理员，或者判断字符串 "admin"）
-		if !exists || role != 1 {
+		if !exists || role != "admin" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code": 403,
 				"msg":  "权限不足：该操作仅限管理员",
