@@ -44,24 +44,21 @@ func (r *commentRepoImpl) GetByArticleID(ctx context.Context, articleID uint64) 
 	return comments, err
 }
 
-// 实现 AdminList
+// AdminList 获取后台管理评论列表（分页、支持关键词搜索）
 func (r *commentRepoImpl) AdminList(ctx context.Context, page, pageSize int, keyword string) ([]model.Comment, int64, error) {
 	var comments []model.Comment
 	var total int64
 
 	db := r.db.WithContext(ctx).Model(&model.Comment{}).Where("is_deleted = 0")
 
-	// 如果有关键词，匹配评论内容
 	if keyword != "" {
 		db = db.Where("content LIKE ?", "%"+keyword+"%")
 	}
 
-	// 获取总数
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 分页查询并加载关联用户
 	err := db.Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Order("created_at DESC").

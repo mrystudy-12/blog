@@ -19,7 +19,7 @@ var (
 type UserService interface {
 	Register(ctx context.Context, username, password, email string) (*model.User, error)
 	Login(ctx context.Context, username, password string) (*model.User, error)
-	GetUserInfo(ctx context.Context, id uint) (*model.Result, error)
+	GetUserInfo(ctx context.Context, id uint64) (*model.Result, error)
 }
 
 type userServiceImpl struct {
@@ -78,7 +78,7 @@ func (s *userServiceImpl) Login(ctx context.Context, username, password string) 
 	return user, nil
 }
 
-func (s *userServiceImpl) GetUserInfo(ctx context.Context, id uint) (*model.Result, error) {
+func (s *userServiceImpl) GetUserInfo(ctx context.Context, id uint64) (*model.Result, error) {
 	// 1. 调用 Repository 层获取数据
 	user, err := s.userRepo.GetByID(ctx, id)
 

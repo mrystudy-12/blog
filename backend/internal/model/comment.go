@@ -8,7 +8,7 @@ import (
 type Comment struct {
 	ID        uint64         `gorm:"primaryKey;autoIncrement" json:"id"`
 	ArticleID uint64         `gorm:"column:article_id;index;not null" json:"article_id"`
-	UserID    uint32         `gorm:"column:user_id;index;not null" json:"user_id"`
+	UserID    uint64         `gorm:"column:user_id;index;not null" json:"user_id"`
 	User      User           `gorm:"foreignKey:UserID" json:"user"`
 	Content   string         `gorm:"type:text;not null" json:"content"`
 	ParentID  uint64         `gorm:"column:parent_id;default:0;index" json:"parent_id"`

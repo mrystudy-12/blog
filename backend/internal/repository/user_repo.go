@@ -9,7 +9,7 @@ import (
 // UserRepository 定义用户操作接口
 type UserRepository interface {
 	Create(ctx context.Context, user *model.User) error
-	GetByID(ctx context.Context, id uint) (*model.User, error)
+	GetByID(ctx context.Context, id uint64) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
 }
@@ -38,7 +38,7 @@ func (r *userRepoImpl) GetByUsername(ctx context.Context, username string) (*mod
 	return &user, nil
 }
 
-func (r *userRepoImpl) GetByID(ctx context.Context, id uint) (*model.User, error) {
+func (r *userRepoImpl) GetByID(ctx context.Context, id uint64) (*model.User, error) {
 	var user model.User
 	err := r.db.WithContext(ctx).
 		Select("id", "username", "nickname", "avatar", "email", "created_at").

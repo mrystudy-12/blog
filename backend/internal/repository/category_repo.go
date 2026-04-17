@@ -9,9 +9,9 @@ import (
 type CategoryRepository interface {
 	Create(ctx context.Context, category *model.Categories) error
 	GetAll(ctx context.Context) ([]model.Categories, error)
-	GetByID(ctx context.Context, id uint32) (*model.Categories, error)
+	GetByID(ctx context.Context, id uint64) (*model.Categories, error)
 	Update(ctx context.Context, category *model.Categories) error
-	Delete(ctx context.Context, id uint32) error // 注意：这里将执行物理删除
+	Delete(ctx context.Context, id uint64) error // 注意：这里将执行物理删除
 }
 
 type categoryRepoImpl struct {
@@ -33,7 +33,7 @@ func (r *categoryRepoImpl) GetAll(ctx context.Context) ([]model.Categories, erro
 	return categories, err
 }
 
-func (r *categoryRepoImpl) GetByID(ctx context.Context, id uint32) (*model.Categories, error) {
+func (r *categoryRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Categories, error) {
 	var category model.Categories
 	err := r.db.WithContext(ctx).First(&category, id).Error
 	return &category, err
@@ -44,6 +44,6 @@ func (r *categoryRepoImpl) Update(ctx context.Context, category *model.Categorie
 }
 
 // Delete 物理删除
-func (r *categoryRepoImpl) Delete(ctx context.Context, id uint32) error {
+func (r *categoryRepoImpl) Delete(ctx context.Context, id uint64) error {
 	return r.db.WithContext(ctx).Delete(&model.Categories{}, id).Error
 }

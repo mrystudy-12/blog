@@ -16,7 +16,7 @@ var (
 // CommentService 定义评论业务接口
 type CommentService interface {
 	// Create 前台接口
-	Create(ctx context.Context, userID uint32, req model.CreateCommentRequest) error
+	Create(ctx context.Context, userID uint64, req model.CreateCommentRequest) error
 	GetByArticle(ctx context.Context, articleID uint64) ([]model.Comment, error)
 
 	// AdminList 后台管理接口
@@ -35,7 +35,7 @@ func NewCommentService(repo repository.CommentRepository) CommentService {
 }
 
 // Create 发表评论
-func (s *commentServiceImpl) Create(ctx context.Context, userID uint32, req model.CreateCommentRequest) error {
+func (s *commentServiceImpl) Create(ctx context.Context, userID uint64, req model.CreateCommentRequest) error {
 	if req.Content == "" {
 		return ErrCommentContentEmpty
 	}

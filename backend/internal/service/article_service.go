@@ -32,11 +32,11 @@ type ArticleService interface {
 	GetPortalDetail(ctx context.Context, id uint64) (*model.Article, error)
 
 	List(ctx context.Context, page, pageSize int, keyword string, status int) (*model.ArticleListResponse, error)
-	Update(ctx context.Context, id uint, req model.UpdateArticleRequest) (*model.Article, error)
-	Delete(ctx context.Context, id uint) error
+	Update(ctx context.Context, id uint64, req model.UpdateArticleRequest) (*model.Article, error)
+	Delete(ctx context.Context, id uint64) error
 
 	// HandleImageUpload 处理图片上传
-	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint32) (string, error)
+	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64) (string, error)
 }
 
 type articleServiceImpl struct {
@@ -89,7 +89,7 @@ func (s *articleServiceImpl) Create(ctx context.Context, authorID uint64, req mo
 	article := &model.Article{
 		Title:      title,
 		Content:    content,
-		AuthorID:   uint32(authorID),
+		AuthorID:   authorID,
 		CategoryID: req.CategoryID,
 		Status:     status,
 		ImageURLs:  req.ImageURLs, // 将自定义数组传入模型
@@ -120,7 +120,7 @@ func (s *articleServiceImpl) Create(ctx context.Context, authorID uint64, req mo
 
 // GetAdminDetail 后台回显：直接从仓库获取原始数据
 func (s *articleServiceImpl) GetAdminDetail(ctx context.Context, id uint64) (*model.Article, error) {
-	article, err := s.repo.GetByID(ctx, uint(id)) // 若 Repo 仍是 uint 则需转换
+	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, ErrArticleNotFound // 使用文件定义的错误变量
 	}
@@ -129,7 +129,7 @@ func (s *articleServiceImpl) GetAdminDetail(ctx context.Context, id uint64) (*mo
 
 // GetPortalDetail 前台展示：增加状态校验逻辑
 func (s *articleServiceImpl) GetPortalDetail(ctx context.Context, id uint64) (*model.Article, error) {
-	article, err := s.repo.GetByID(ctx, uint(id))
+	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, ErrArticleNotFound
 	}
@@ -158,7 +158,7 @@ func (s *articleServiceImpl) List(ctx context.Context, page, pageSize int, keywo
 	}, nil
 }
 
-func (s *articleServiceImpl) Update(ctx context.Context, id uint, req model.UpdateArticleRequest) (*model.Article, error) {
+func (s *articleServiceImpl) Update(ctx context.Context, id uint64, req model.UpdateArticleRequest) (*model.Article, error) {
 	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, ErrArticleNotFound
@@ -181,7 +181,7 @@ func (s *articleServiceImpl) Update(ctx context.Context, id uint, req model.Upda
 	// 开启事务进行更新和关联
 	err = s.repo.Transaction(ctx, func(tx *gorm.DB) error {
 		// 1. 获取更新前的所有关联图片记录
-		oldImages, err := s.repo.GetImagesByArticleID(ctx, uint64(id))
+		oldImages, err := s.repo.GetImagesByArticleID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("获取旧图片关联失败: %w", err)
 		}
@@ -238,7 +238,7 @@ func (s *articleServiceImpl) Update(ctx context.Context, id uint, req model.Upda
 	return article, nil
 }
 
-func (s *articleServiceImpl) Delete(ctx context.Context, id uint) error {
+func (s *articleServiceImpl) Delete(ctx context.Context, id uint64) error {
 	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return ErrArticleNotFound
@@ -247,7 +247,7 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint) error {
 	// 开启事务，确保文章和关联图片的删除原子化
 	return s.repo.Transaction(ctx, func(tx *gorm.DB) error {
 		// 1. 查询该文章关联的所有图片
-		images, err := s.repo.GetImagesByArticleID(ctx, uint64(id))
+		images, err := s.repo.GetImagesByArticleID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("获取文章关联图片失败: %w", err)
 		}
@@ -264,7 +264,7 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint) error {
 		}
 
 		// 3. 删除数据库中的图片记录
-		if err := s.repo.DeleteImagesByArticleID(ctx, uint64(id)); err != nil {
+		if err := s.repo.DeleteImagesByArticleID(ctx, id); err != nil {
 			return fmt.Errorf("删除图片记录失败: %w", err)
 		}
 
@@ -279,7 +279,7 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint) error {
 }
 
 // HandleImageUpload 处理图片上传的存储和记录逻辑
-func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint32) (string, error) {
+func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64) (string, error) {
 	// 1. 存储准备
 	ext := filepath.Ext(file.Filename)
 	articlesImagePath := getImagesPath()

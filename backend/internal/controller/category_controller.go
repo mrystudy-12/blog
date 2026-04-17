@@ -41,7 +41,7 @@ func (ctrl *CategoryController) GetByID(c *gin.Context) {
 		return
 	}
 
-	category, err := ctrl.categoryService.GetByID(c.Request.Context(), uint32(id))
+	category, err := ctrl.categoryService.GetByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 404, Message: "分类不存在"})
 		return
@@ -79,7 +79,7 @@ func (ctrl *CategoryController) Update(c *gin.Context) {
 
 func (ctrl *CategoryController) Delete(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := ctrl.categoryService.Delete(c.Request.Context(), uint32(id)); err != nil {
+	if err := ctrl.categoryService.Delete(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 500, Message: "删除失败"})
 		return
 	}

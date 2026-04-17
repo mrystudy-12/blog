@@ -10,11 +10,11 @@ type Article struct {
 	ID         uint64         `gorm:"primaryKey;autoIncrement" json:"id"`
 	Title      string         `gorm:"size:255;not null" json:"title"`
 	Content    string         `gorm:"type:longtext;not null" json:"content"`
-	AuthorID   uint32         `gorm:"column:user_id;index" json:"user_id"`
+	AuthorID   uint64         `gorm:"column:user_id;index" json:"user_id"`
 	Author     User           `gorm:"foreignKey:AuthorID" json:"author"`
-	CategoryID uint           `gorm:"column:category_id;index" json:"category_id"`
+	CategoryID uint64         `gorm:"column:category_id;index" json:"category_id"`
 	Status     int8           `gorm:"column:status;default:0" json:"status"`
-	ViewCount  uint           `gorm:"column:view_count;default:0" json:"view_count"`
+	ViewCount  uint64         `gorm:"column:view_count;default:0" json:"view_count"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
@@ -24,19 +24,10 @@ type Article struct {
 
 // Image 代表文章关联的图片模型
 type Image struct {
-	// ID: 自增主键 (bigint unsigned)
-	ID uint64 `gorm:"primaryKey;autoIncrement" json:"id"`
-
-	// ArticleID: 关联文章ID (bigint unsigned)
-	ArticleID uint64 `gorm:"column:article_id;index" json:"article_id"`
-
-	// UserID: 上传用户ID (int unsigned)
-	UserID uint32 `gorm:"column:user_id;index" json:"user_id"`
-
-	// URL: 图片访问地址 (varchar(255))
-	URL string `gorm:"size:255;not null" json:"url"`
-
-	// CreatedAt: 创建时间
+	ID        uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	ArticleID uint64    `gorm:"column:article_id;index" json:"article_id"`
+	UserID    uint64    `gorm:"column:user_id;index" json:"user_id"`
+	URL       string    `gorm:"size:255;not null" json:"url"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 }
 
@@ -54,7 +45,7 @@ type Result struct {
 type CreateArticleRequest struct {
 	Title      string   `json:"title" binding:"required,min=1,max=255"`
 	Content    string   `json:"content" binding:"required"`
-	CategoryID uint     `json:"category_id"`
+	CategoryID uint64   `json:"category_id"`
 	Status     int8     `json:"status"`     // 0: 草稿 1: 发布
 	ImageURLs  []string `json:"image_urls"` // 接收上传后的图片URL列表
 }
@@ -63,7 +54,7 @@ type CreateArticleRequest struct {
 type UpdateArticleRequest struct {
 	Title      string   `json:"title" binding:"max=255"`
 	Content    string   `json:"content"`
-	CategoryID uint     `json:"category_id"`
+	CategoryID uint64   `json:"category_id"`
 	Status     int8     `json:"status"`     // 修改状态（发布或改回草稿）
 	ImageURLs  []string `json:"image_urls"` // 更新后的图片URL列表
 }

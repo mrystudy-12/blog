@@ -17,13 +17,13 @@ type CategoryService interface {
 	// GetAll 获取全部分类（用于前台展示和后台列表）
 	GetAll(ctx context.Context) ([]model.Categories, error)
 	// GetByID 根据ID获取单个分类
-	GetByID(ctx context.Context, id uint32) (*model.Categories, error)
+	GetByID(ctx context.Context, id uint64) (*model.Categories, error)
 	// Create 创建分类
 	Create(ctx context.Context, category *model.Categories) error
 	// Update 更新分类
 	Update(ctx context.Context, category *model.Categories) error
 	// Delete 删除分类（物理删除）
-	Delete(ctx context.Context, id uint32) error
+	Delete(ctx context.Context, id uint64) error
 }
 
 type categoryServiceImpl struct {
@@ -42,7 +42,7 @@ func (s *categoryServiceImpl) GetAll(ctx context.Context) ([]model.Categories, e
 }
 
 // GetByID 根据 ID 获取详情
-func (s *categoryServiceImpl) GetByID(ctx context.Context, id uint32) (*model.Categories, error) {
+func (s *categoryServiceImpl) GetByID(ctx context.Context, id uint64) (*model.Categories, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
@@ -70,7 +70,7 @@ func (s *categoryServiceImpl) Update(ctx context.Context, category *model.Catego
 }
 
 // Delete 删除分类
-func (s *categoryServiceImpl) Delete(ctx context.Context, id uint32) error {
+func (s *categoryServiceImpl) Delete(ctx context.Context, id uint64) error {
 	// 1. 校验是否存在
 	if _, err := s.repo.GetByID(ctx, id); err != nil {
 		return ErrCategoryNotFound

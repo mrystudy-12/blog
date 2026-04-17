@@ -104,7 +104,7 @@ func (ctrl *ArticleController) UploadImage(c *gin.Context) {
 	}
 
 	// 调用 Service 保存图片 (建议 Service 返回完整可访问 URL)
-	url, err := ctrl.articleService.HandleImageUpload(c.Request.Context(), file, uint32(authorID))
+	url, err := ctrl.articleService.HandleImageUpload(c.Request.Context(), file, authorID)
 	if err != nil {
 		ctrl.sendResponse(c, 500, "上传失败", nil)
 		return
@@ -140,7 +140,7 @@ func (ctrl *ArticleController) Update(c *gin.Context) {
 		return
 	}
 
-	article, err := ctrl.articleService.Update(c.Request.Context(), uint(id), req)
+	article, err := ctrl.articleService.Update(c.Request.Context(), id, req)
 	if err != nil {
 		ctrl.sendResponse(c, 500, "更新失败", nil)
 		return
@@ -152,7 +152,7 @@ func (ctrl *ArticleController) Update(c *gin.Context) {
 // Delete 删除文章
 func (ctrl *ArticleController) Delete(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err := ctrl.articleService.Delete(c.Request.Context(), uint(id)); err != nil {
+	if err := ctrl.articleService.Delete(c.Request.Context(), id); err != nil {
 		ctrl.sendResponse(c, 500, "删除失败", nil)
 		return
 	}

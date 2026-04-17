@@ -10,10 +10,10 @@ import (
 // ArticleRepository 定义文章操作接口
 type ArticleRepository interface {
 	Create(ctx context.Context, article *model.Article) error
-	GetByID(ctx context.Context, id uint) (*model.Article, error)
+	GetByID(ctx context.Context, id uint64) (*model.Article, error)
 	List(ctx context.Context, page, pageSize int, keyword string, status int) ([]model.Article, int64, error)
 	Update(ctx context.Context, article *model.Article) error
-	Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id uint64) error
 
 	// CreateImage 创建图片记录
 	CreateImage(ctx context.Context, image *model.Image) error
@@ -81,7 +81,7 @@ func (r *articleRepoImpl) Transaction(ctx context.Context, fn func(tx *gorm.DB) 
 	return r.db.WithContext(ctx).Transaction(fn)
 }
 
-func (r *articleRepoImpl) GetByID(ctx context.Context, id uint) (*model.Article, error) {
+func (r *articleRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Article, error) {
 	var article model.Article
 	// 1. 保持基础查询：不带状态过滤，这样后台回显也能用
 	// 2. Preload 保持不变，用于关联查询作者和分类信息
@@ -142,6 +142,6 @@ func (r *articleRepoImpl) DeleteImagesByArticleID(ctx context.Context, articleID
 	return r.db.WithContext(ctx).Where("article_id = ?", articleID).Delete(&model.Image{}).Error
 }
 
-func (r *articleRepoImpl) Delete(ctx context.Context, id uint) error {
+func (r *articleRepoImpl) Delete(ctx context.Context, id uint64) error {
 	return r.db.WithContext(ctx).Delete(&model.Article{}, id).Error
 }

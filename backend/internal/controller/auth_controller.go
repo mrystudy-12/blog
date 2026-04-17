@@ -66,7 +66,7 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	// 生成 JWT Token，按照新格式传递参数
-	token, err := utils.GenerateToken(int64(user.ID), user.Username, "user")
+	token, err := utils.GenerateToken(user.ID, user.Username, "user")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Token 失败"})
 		return
@@ -94,7 +94,7 @@ func (ctrl *AuthController) GetMe(c *gin.Context) {
 	// 2. 类型转换并调用 Service
 	// 假设你 Service 接受的是 uint，这里断言后需转换
 	// 如果中间件存的是 uint32，则 uint(uid.(uint32))
-	res, err := ctrl.userService.GetUserInfo(c.Request.Context(), uint(uid.(uint32)))
+	res, err := ctrl.userService.GetUserInfo(c.Request.Context(), uid.(uint64))
 	if err != nil {
 		c.JSON(http.StatusOK, model.Result{
 			Code:    500,
