@@ -7,44 +7,19 @@ import (
 
 // Article 代表文章模型
 type Article struct {
-	// ID: 自增主键
-	ID uint64 `gorm:"primaryKey;autoIncrement" json:"id"`
-
-	// Title: 文章标题
-	Title string `gorm:"size:255;not null" json:"title"`
-
-	// Content: 文章正文
-	Content string `gorm:"type:longtext;not null" json:"content"`
-
-	// AuthorID:用户id
-	AuthorID uint32 `gorm:"column:user_id;index" json:"user_id"`
-
-	// Author: 作者信息
-	Author User `gorm:"foreignKey:AuthorID" json:"author"`
-
-	// CategoryID: 分类id
-	CategoryID uint `gorm:"column:category_id;index" json:"category_id"`
-
-	// Status: 文章状态 0:草稿/未发布，1:已发布
-	Status int8 `gorm:"column:status;default:0" json:"status"`
-
-	// ViewCount: 阅读量
-	ViewCount uint `gorm:"column:view_count;default:0" json:"view_count"`
-
-	// CreatedAt:创建文件时间
-	CreatedAt time.Time `json:"created_at"`
-
-	// UpdatedAt: 修改文件时间
-	UpdatedAt time.Time `json:"updated_at"`
-
-	// DeletedAt: 软删除的标签
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-
-	// Images: 文章关联的图片列表
-	Images []Image `gorm:"foreignKey:ArticleID" json:"images"`
-
-	// ImageURLs: 自定义数组，用于接收前端传递的图片 URL 列表进行关联更新
-	ImageURLs []string `gorm:"-" json:"image_urls"`
+	ID         uint64         `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title      string         `gorm:"size:255;not null" json:"title"`
+	Content    string         `gorm:"type:longtext;not null" json:"content"`
+	AuthorID   uint32         `gorm:"column:user_id;index" json:"user_id"`
+	Author     User           `gorm:"foreignKey:AuthorID" json:"author"`
+	CategoryID uint           `gorm:"column:category_id;index" json:"category_id"`
+	Status     int8           `gorm:"column:status;default:0" json:"status"`
+	ViewCount  uint           `gorm:"column:view_count;default:0" json:"view_count"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	Images     []Image        `gorm:"foreignKey:ArticleID" json:"images"`
+	ImageURLs  []string       `gorm:"-" json:"image_urls"`
 }
 
 // Image 代表文章关联的图片模型

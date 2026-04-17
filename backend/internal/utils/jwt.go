@@ -10,7 +10,7 @@ import (
 var jwtKey = []byte("my_secret_key")
 
 // GenerateToken 生成 JWT Token，按照用户指定格式
-func GenerateToken(id int64, username, role string) (string, error) {
+func GenerateToken(id uint64, username, role string) (string, error) {
 	expirationTime := time.Now().Add(30 * time.Minute)
 	claims := model.Claims{
 		ID:       id,

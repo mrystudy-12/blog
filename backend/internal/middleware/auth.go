@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"GoWork_9/backend/internal/model"
 	"GoWork_9/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -12,7 +13,10 @@ func AuthJWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "请求未携带 Authorization 头部"})
+			c.JSON(http.StatusUnauthorized, model.Result{
+				Code:    401,
+				Message: "请求未携带有效的 Authorization 头部",
+			})
 			c.Abort()
 			return
 		}
@@ -66,20 +70,18 @@ func IsAdmin() gin.HandlerFunc {
 }
 
 // GetUID  从上下文中获取当前用户 ID
-func GetUID(c *gin.Context) uint {
+func GetUID(c *gin.Context) uint64 {
 	uidVal, exists := c.Get("userID")
 	if !exists {
 		return 0
 	}
 	switch v := uidVal.(type) {
-	case int64:
-		return uint(v)
-	case int:
-		return uint(v)
-	case uint:
+	case uint64:
 		return v
-	case uint32:
-		return uint(v)
+	case int64:
+		return uint64(v)
+	case float64: // JWT 解析数字时有时会默认转为 float64
+		return uint64(v)
 	default:
 		return 0
 	}

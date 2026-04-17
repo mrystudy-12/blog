@@ -24,7 +24,7 @@ var (
 
 // ArticleService 定义文章业务接口
 type ArticleService interface {
-	Create(ctx context.Context, authorID uint, req model.CreateArticleRequest) (*model.Article, error)
+	Create(ctx context.Context, authorID uint64, req model.CreateArticleRequest) (*model.Article, error)
 	// GetAdminDetail 后台获取文章详情 (用于编辑回显，不校验发布状态)
 	GetAdminDetail(ctx context.Context, id uint64) (*model.Article, error)
 
@@ -71,7 +71,7 @@ func NewArticleService(repo repository.ArticleRepository) ArticleService {
 }
 
 // Create 新增文章业务逻辑
-func (s *articleServiceImpl) Create(ctx context.Context, authorID uint, req model.CreateArticleRequest) (*model.Article, error) {
+func (s *articleServiceImpl) Create(ctx context.Context, authorID uint64, req model.CreateArticleRequest) (*model.Article, error) {
 	title := strings.TrimSpace(req.Title)
 	content := strings.TrimSpace(req.Content)
 	if title == "" {
