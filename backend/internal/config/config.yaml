@@ -1,0 +1,8 @@
+database:
+  driver: "mysql"
+  dsn: "root:231792@tcp(localhost:3306)/blog?charset=utf8mb4&parseTime=True&loc=Local"
+  max_idle: 10
+  max_open: 100
+  life_time: 1
+server:
+  port: "8080"
