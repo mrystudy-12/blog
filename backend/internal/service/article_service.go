@@ -146,6 +146,9 @@ func (s *articleServiceImpl) GetPortalDetail(ctx context.Context, id uint64) (*m
 }
 
 func (s *articleServiceImpl) List(ctx context.Context, page, pageSize int, keyword string, status int) (*model.ArticleListResponse, error) {
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	articles, total, err := s.repo.List(ctx, page, pageSize, keyword, status)
 	if err != nil {
 		return nil, err
@@ -287,60 +290,72 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint64) error {
 
 // HandleImageUpload 处理图片上传的存储和记录逻辑
 func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64) (string, error) {
-	// 1. 存储准备
-	ext := filepath.Ext(file.Filename)
-	articlesImagePath := getImagesPath()
+	// 1. 业务层精确校验：限制 5MB
+	const maxFileSize = 5 << 20
+	if file.Size > maxFileSize {
+		return "", fmt.Errorf("图片大小不能超过 5MB (当前为 %.2f MB)", float64(file.Size)/1024/1024)
+	}
 
+	// 2. 格式校验
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
+	if !allowExts[ext] {
+		return "", fmt.Errorf("不支持的文件格式: %s", ext)
+	}
+
+	// 3. 存储准备
+	articlesImagePath := getImagesPath() // 确保该函数返回 frontend/static/images/articles
 	if err := os.MkdirAll(articlesImagePath, 0755); err != nil {
 		return "", fmt.Errorf("创建存储目录失败: %w", err)
 	}
 
-	newFilename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), "img", ext)
+	newFilename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), userID, ext)
 	filePath := filepath.Join(articlesImagePath, newFilename)
 
-	// 2. 执行文件保存
+	// 4. 保存物理文件
 	src, err := file.Open()
 	if err != nil {
-		return "", fmt.Errorf("打开上传文件失败: %w", err)
+		return "", err
 	}
 	defer func(src multipart.File) {
 		err := src.Close()
 		if err != nil {
-
+			fmt.Printf("关闭失败1")
 		}
 	}(src)
 
 	dst, err := os.Create(filePath)
 	if err != nil {
-		return "", fmt.Errorf("创建磁盘文件失败: %w", err)
+		return "", err
 	}
-	defer func(dst *os.File) {
+
+	// 执行写入并显式落盘
+	if _, err := io.Copy(dst, src); err != nil {
 		err := dst.Close()
 		if err != nil {
-
+			return "关闭失败2", err
 		}
-	}(dst)
-
-	if _, err := io.Copy(dst, src); err != nil {
-		return "", fmt.Errorf("文件内容写入失败: %w", err)
+		return "写入失败", err
 	}
+	_ = dst.Sync() // 强制刷入磁盘
+	err = dst.Close()
+	if err != nil {
+		return "关闭失败3", err
+	} // 写入完成立即关闭，释放句柄
 
-	// 3. 物理文件存在性校验
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return "", fmt.Errorf("文件保存验证失败：物理文件未出现在目录中 [%s]", filePath)
-	}
-
+	// 5. 数据库记录入库
 	urlPath := "/static/images/articles/" + newFilename
-
-	// 5. 调用 Repository 记录图片（此时 article_id 为 0）
 	imgRecord := &model.Image{
 		ArticleID: 0,
 		UserID:    userID,
 		URL:       urlPath,
 		CreatedAt: time.Now(),
 	}
+
 	if err := s.repo.CreateImage(ctx, imgRecord); err != nil {
-		return "", fmt.Errorf("图片记录入库失败: %w", err)
+		// 关键：如果数据库记录失败，立即清理刚存好的物理文件
+		_ = os.Remove(filePath)
+		return "", fmt.Errorf("图片记录入库失败，已清理残留文件: %w", err)
 	}
 
 	return urlPath, nil

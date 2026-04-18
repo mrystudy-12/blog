@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
-	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 var ArticleCtrl *ArticleController
@@ -83,34 +83,42 @@ func (ctrl *ArticleController) GetByID(c *gin.Context) {
 
 // UploadImage 处理图片上传请求
 func (ctrl *ArticleController) UploadImage(c *gin.Context) {
+	// 1. 权限拦截
 	authorID := middleware.GetUID(c)
 	if authorID == 0 {
-		ctrl.sendResponse(c, 401, "未授权操作", nil)
+		ctrl.sendResponse(c, 401, "请先登录", nil)
 		return
 	}
 
-	file, err := c.FormFile("image") // 前端上传字段名保持为 image
+	// 2. Controller 层轻量拦截：根据请求头判断大小
+	// 这样不需要解析 Body 就能直接拒绝超大请求
+	const maxBodySize = 5 << 20
+	if c.Request.ContentLength > maxBodySize {
+		ctrl.sendResponse(c, 413, "上传的文件太大，系统拒绝处理", nil)
+		return
+	}
+
+	// 3. 解析表单文件
+	file, err := c.FormFile("image")
 	if err != nil {
 		ctrl.sendResponse(c, 400, "文件获取失败", nil)
 		return
 	}
 
-	// 校验格式
-	ext := filepath.Ext(file.Filename)
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
-	if !allowed[ext] {
-		ctrl.sendResponse(c, 400, "仅支持图片格式", nil)
-		return
-	}
-
-	// 调用 Service 保存图片 (建议 Service 返回完整可访问 URL)
+	// 4. 调用 Service
 	url, err := ctrl.articleService.HandleImageUpload(c.Request.Context(), file, authorID)
 	if err != nil {
-		ctrl.sendResponse(c, 500, "上传失败", nil)
+		// 如果是业务校验错误返回 400，系统错误返回 500
+		if strings.Contains(err.Error(), "格式") || strings.Contains(err.Error(), "大小") {
+			ctrl.sendResponse(c, 400, err.Error(), nil)
+		} else {
+			ctrl.sendResponse(c, 500, "服务器保存图片出错", nil)
+		}
 		return
 	}
 
-	ctrl.sendResponse(c, 200, "上传成功", url)
+	// 5. 成功返回
+	ctrl.sendResponse(c, 200, "上传成功", gin.H{"url": url})
 }
 
 // AdminList 获取文章列表
