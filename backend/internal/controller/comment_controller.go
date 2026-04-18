@@ -44,7 +44,7 @@ func (ctrl *CommentController) Create(c *gin.Context) {
 	}
 
 	// 3. 调用 Service
-	if err := ctrl.commentService.Create(c.Request.Context(), uid.(uint32), req); err != nil {
+	if err := ctrl.commentService.Create(c.Request.Context(), uid.(uint64), req); err != nil {
 		code := 500
 		if errors.Is(err, service.ErrCommentContentEmpty) {
 			code = http.StatusBadRequest // 400
