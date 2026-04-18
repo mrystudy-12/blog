@@ -9,11 +9,11 @@ import (
 
 // ArticleRepository 定义文章操作接口
 type ArticleRepository interface {
-	Create(ctx context.Context, article *model.Article) error
+	Create(ctx context.Context, tx *gorm.DB, article *model.Article) error
 	GetByID(ctx context.Context, id uint64) (*model.Article, error)
 	List(ctx context.Context, page, pageSize int, keyword string, status int) ([]model.Article, int64, error)
-	Update(ctx context.Context, article *model.Article) error
-	Delete(ctx context.Context, id uint64) error
+	Update(ctx context.Context, tx *gorm.DB, article *model.Article) error
+	Delete(ctx context.Context, tx *gorm.DB, id uint64) error
 
 	// CreateImage 创建图片记录
 	CreateImage(ctx context.Context, image *model.Image) error
@@ -38,8 +38,11 @@ func NewArticleRepository(db *gorm.DB) ArticleRepository {
 	return &articleRepoImpl{db: db}
 }
 
-func (r *articleRepoImpl) Create(ctx context.Context, article *model.Article) error {
-	return r.db.WithContext(ctx).Create(article).Error
+func (r *articleRepoImpl) Create(ctx context.Context, tx *gorm.DB, article *model.Article) error {
+	if tx == nil {
+		tx = r.db
+	}
+	return tx.WithContext(ctx).Create(article).Error
 }
 
 // CreateImage 创建图片记录
@@ -129,8 +132,11 @@ func (r *articleRepoImpl) List(ctx context.Context, page, pageSize int, keyword 
 	return articles, total, err
 }
 
-func (r *articleRepoImpl) Update(ctx context.Context, article *model.Article) error {
-	return r.db.WithContext(ctx).
+func (r *articleRepoImpl) Update(ctx context.Context, tx *gorm.DB, article *model.Article) error {
+	if tx == nil {
+		tx = r.db
+	}
+	return tx.WithContext(ctx).
 		Model(&model.Article{}).
 		Where("id = ?", article.ID).
 		Select("Title", "Content", "CategoryID", "Status").
@@ -142,6 +148,9 @@ func (r *articleRepoImpl) DeleteImagesByArticleID(ctx context.Context, articleID
 	return r.db.WithContext(ctx).Where("article_id = ?", articleID).Delete(&model.Image{}).Error
 }
 
-func (r *articleRepoImpl) Delete(ctx context.Context, id uint64) error {
-	return r.db.WithContext(ctx).Delete(&model.Article{}, id).Error
+func (r *articleRepoImpl) Delete(ctx context.Context, tx *gorm.DB, id uint64) error {
+	if tx == nil {
+		tx = r.db
+	}
+	return tx.WithContext(ctx).Delete(&model.Article{}, id).Error
 }

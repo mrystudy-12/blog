@@ -41,6 +41,7 @@ type ArticleService interface {
 
 type articleServiceImpl struct {
 	repo repository.ArticleRepository
+	cop  repository.CommentRepository
 }
 
 const articleImagePath = "frontend/static/images/articles"
@@ -98,7 +99,7 @@ func (s *articleServiceImpl) Create(ctx context.Context, authorID uint64, req mo
 	// 开启事务，确保文章创建和图片关联原子化
 	err := s.repo.Transaction(ctx, func(tx *gorm.DB) error {
 		// 1. 创建文章
-		if err := tx.Create(article).Error; err != nil {
+		if err := s.repo.Create(ctx, tx, article); err != nil {
 			return err
 		}
 
@@ -187,7 +188,7 @@ func (s *articleServiceImpl) Update(ctx context.Context, id uint64, req model.Up
 		}
 
 		// 2. 更新文章基本信息
-		if err := s.repo.Update(ctx, article); err != nil {
+		if err := s.repo.Update(ctx, tx, article); err != nil {
 			return err
 		}
 
@@ -239,43 +240,49 @@ func (s *articleServiceImpl) Update(ctx context.Context, id uint64, req model.Up
 }
 
 func (s *articleServiceImpl) Delete(ctx context.Context, id uint64) error {
-	article, err := s.repo.GetByID(ctx, id)
+	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return ErrArticleNotFound
 	}
 
-	// 开启事务，确保文章和关联图片的删除原子化
-	return s.repo.Transaction(ctx, func(tx *gorm.DB) error {
-		// 1. 查询该文章关联的所有图片
-		images, err := s.repo.GetImagesByArticleID(ctx, id)
-		if err != nil {
-			return fmt.Errorf("获取文章关联图片失败: %w", err)
-		}
+	images, err := s.repo.GetImagesByArticleID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("获取文章关联图片失败: %w", err)
+	}
 
-		// 2. 删除物理文件
-		basePath := getImagesPath()
-		for _, img := range images {
-			fullPath := filepath.Join(basePath, filepath.Base(img.URL))
-			if err := os.Remove(fullPath); err != nil {
-				if !os.IsNotExist(err) {
-					fmt.Printf("警告：删除文章图片物理文件失败 [%s]: %v\n", fullPath, err)
-				}
-			}
-		}
+	// 开启事务，确保文章和关联图片的删除原子化
+	err = s.repo.Transaction(ctx, func(tx *gorm.DB) error {
 
 		// 3. 删除数据库中的图片记录
 		if err := s.repo.DeleteImagesByArticleID(ctx, id); err != nil {
 			return fmt.Errorf("删除图片记录失败: %w", err)
 		}
-
-		// 4. 删除文章
-		if err := s.repo.Delete(ctx, id); err != nil {
+		//4. 删除评论
+		if err := s.cop.Delete(ctx, id); err != nil {
+			return err
+		}
+		// 5. 删除文章
+		if err := s.repo.Delete(ctx, tx, id); err != nil {
 			return err
 		}
 
-		_ = article // 避免未使用变量编译错误
 		return nil
 	})
+
+	if err == nil {
+		basePath := getImagesPath()
+		for _, img := range images {
+			// filepath.Base 提取文件名，防止路径穿越风险
+			fullPath := filepath.Join(basePath, filepath.Base(img.URL))
+			if err := os.Remove(fullPath); err != nil {
+				// 物理删除失败仅记录警告，不回滚已提交的数据库事务
+				if !os.IsNotExist(err) {
+					fmt.Printf("警告：删除文章图片物理文件失败 [%s]: %v\n", fullPath, err)
+				}
+			}
+		}
+	}
+	return err
 }
 
 // HandleImageUpload 处理图片上传的存储和记录逻辑
