@@ -27,6 +27,7 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应结构体
 type LoginResponse struct {
+	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Token   string      `json:"token"`
 	Data    interface{} `json:"data"`
@@ -34,6 +35,7 @@ type LoginResponse struct {
 
 // RegisterResponse 注册响应结构体
 type RegisterResponse struct {
+	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }

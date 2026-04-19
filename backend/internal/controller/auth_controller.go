@@ -52,6 +52,7 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.RegisterResponse{
+		Code:    200,
 		Message: "注册成功",
 		Data:    user,
 	})
@@ -88,6 +89,7 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.LoginResponse{
+		Code:    200,
 		Message: "登录成功",
 		Token:   token,
 		Data:    user,
