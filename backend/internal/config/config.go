@@ -23,7 +23,8 @@ type DatabaseConfig struct {
 
 // ServerConfig 服务器配置结构体
 type ServerConfig struct {
-	Port string `yaml:"port"`
+	Port    string `yaml:"port"`
+	BaseURL string `yaml:"base_url"`
 }
 
 var GlobalConfig *Config
@@ -55,7 +56,8 @@ func InitDefaultConfig() {
 			LifeTime: 1,
 		},
 		Server: ServerConfig{
-			Port: "8080",
+			Port:    "8080",
+			BaseURL: "http://localhost:8080",
 		},
 	}
 }

@@ -36,7 +36,7 @@ type ArticleService interface {
 	Delete(ctx context.Context, id uint64) error
 
 	// HandleImageUpload 处理图片上传
-	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64) (string, error)
+	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64, baseURl string) (string, error)
 }
 
 type articleServiceImpl struct {
@@ -132,6 +132,7 @@ func (s *articleServiceImpl) GetAdminDetail(ctx context.Context, id uint64) (*mo
 func (s *articleServiceImpl) GetPortalDetail(ctx context.Context, id uint64) (*model.Article, error) {
 	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		fmt.Println("这个问题在这里有问题", err)
 		return nil, ErrArticleNotFound
 	}
 
@@ -289,7 +290,7 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint64) error {
 }
 
 // HandleImageUpload 处理图片上传的存储和记录逻辑
-func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64) (string, error) {
+func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64, baseURL string) (string, error) {
 	// 1. 业务层精确校验：限制 5MB
 	const maxFileSize = 5 << 20
 	if file.Size > maxFileSize {
@@ -344,7 +345,7 @@ func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multip
 	} // 写入完成立即关闭，释放句柄
 
 	// 5. 数据库记录入库
-	urlPath := "/static/images/articles/" + newFilename
+	urlPath := baseURL + "/static/images/articles/" + newFilename
 	imgRecord := &model.Image{
 		ArticleID: 0,
 		UserID:    userID,

@@ -11,9 +11,7 @@ type Comment struct {
 	UserID    uint64         `gorm:"column:user_id;index;not null" json:"user_id"`
 	User      User           `gorm:"foreignKey:UserID" json:"user"`
 	Content   string         `gorm:"type:text;not null" json:"content"`
-	ParentID  uint64         `gorm:"column:parent_id;default:0;index" json:"parent_id"`
-	Status    int8           `gorm:"column:status;default:1" json:"status"`
-	IsDeleted int8           `gorm:"column:is_deleted;default:0" json:"is_deleted"`
+	Status    int8           `gorm:"column:status;default:0" json:"status"`
 	CreatedAt time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }

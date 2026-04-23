@@ -3,6 +3,7 @@ package repository
 import (
 	"GoWork_9/backend/internal/model"
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -91,9 +92,11 @@ func (r *articleRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Articl
 	err := r.db.WithContext(ctx).
 		Preload("User").
 		Preload("Category").
+		Preload("Images").
 		First(&article, id).Error
 
 	if err != nil {
+		fmt.Println("文章消失了")
 		return nil, err // 发生错误（如记录不存在）返回 nil
 	}
 	return &article, nil
@@ -123,12 +126,12 @@ func (r *articleRepoImpl) List(ctx context.Context, page, pageSize int, keyword 
 	// 2. 分页查询
 	offset := (page - 1) * pageSize
 	err := db.Order("created_at DESC").
-		Preload("Author"). // 预加载作者，防止前端收到 null
+		Preload("User").   // 预加载作者，防止前端收到 null
 		Preload("Images"). // 预加载图片列表
+		Preload("Category").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&articles).Error
-
 	return articles, total, err
 }
 

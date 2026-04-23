@@ -1,13 +1,13 @@
 package controller
 
 import (
+	"GoWork_9/backend/internal/config"
 	"GoWork_9/backend/internal/middleware"
 	"GoWork_9/backend/internal/model"
 	"GoWork_9/backend/internal/repository"
 	"GoWork_9/backend/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -31,7 +31,7 @@ func NewArticleController(articleService service.ArticleService) *ArticleControl
 
 // sendResponse 统一响应处理
 func (ctrl *ArticleController) sendResponse(c *gin.Context, code int, message string, data interface{}) {
-	c.JSON(http.StatusOK, model.Result{
+	c.JSON(code, model.Result{
 		Code:    code,
 		Message: message,
 		Data:    data,
@@ -105,8 +105,11 @@ func (ctrl *ArticleController) UploadImage(c *gin.Context) {
 		return
 	}
 
+	// 1. 优先从请求头获取真实的协议 (Nginx/LB 转发)
+	baseURL := config.GlobalConfig.Server.BaseURL
+
 	// 4. 调用 Service
-	url, err := ctrl.articleService.HandleImageUpload(c.Request.Context(), file, authorID)
+	url, err := ctrl.articleService.HandleImageUpload(c.Request.Context(), file, authorID, baseURL)
 	if err != nil {
 		// 如果是业务校验错误返回 400，系统错误返回 500
 		if strings.Contains(err.Error(), "格式") || strings.Contains(err.Error(), "大小") {

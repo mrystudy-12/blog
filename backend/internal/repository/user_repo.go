@@ -40,10 +40,7 @@ func (r *userRepoImpl) GetByUsername(ctx context.Context, username string) (*mod
 
 func (r *userRepoImpl) GetByID(ctx context.Context, id uint64) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).
-		Select("id", "username", "nickname", "avatar", "email", "created_at").
-		First(&user, id).
-		Error
+	err := r.db.WithContext(ctx).First(&user, id).Error
 
 	if err != nil {
 		return nil, err
