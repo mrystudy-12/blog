@@ -44,9 +44,7 @@ func (s *commentServiceImpl) Create(ctx context.Context, userID uint64, req mode
 		ArticleID: req.ArticleID,
 		UserID:    userID,
 		Content:   req.Content,
-		ParentID:  req.ParentID, // 支持回复功能
-		Status:    1,            // 默认正常显示
-		IsDeleted: 0,
+		Status:    1, // 默认正常显示
 	}
 
 	return s.repo.Create(ctx, comment)

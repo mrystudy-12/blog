@@ -2,6 +2,7 @@ package db
 
 import (
 	"GoWork_9/backend/internal/config"
+	"GoWork_9/backend/internal/utils"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -55,5 +56,5 @@ func InitDB() {
 		panic(fmt.Sprintf("Database initialized but Ping failed: %v", err))
 	}
 
-	fmt.Println("Database connection established successfully")
+	utils.GetLogger().Info("Database connection established successfully")
 }

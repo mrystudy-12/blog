@@ -30,12 +30,38 @@ func (r *categoryRepoImpl) Create(ctx context.Context, category *model.Categorie
 func (r *categoryRepoImpl) GetAll(ctx context.Context) ([]model.Categories, error) {
 	var categories []model.Categories
 	err := r.db.WithContext(ctx).Order("sort asc").Find(&categories).Error
+
+	if err != nil {
+		return categories, err
+	}
+
+	// 计算每个分类的文章数
+	for i := range categories {
+		var articleCount int64
+		r.db.WithContext(ctx).Model(&model.Article{}).
+			Where("category_id = ?", categories[i].ID).
+			Count(&articleCount)
+		categories[i].ArticleCount = int(articleCount)
+	}
+
 	return categories, err
 }
 
 func (r *categoryRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Categories, error) {
 	var category model.Categories
 	err := r.db.WithContext(ctx).First(&category, id).Error
+
+	if err != nil {
+		return &category, err
+	}
+
+	// 计算分类的文章数
+	var articleCount int64
+	r.db.WithContext(ctx).Model(&model.Article{}).
+		Where("category_id = ?", category.ID).
+		Count(&articleCount)
+	category.ArticleCount = int(articleCount)
+
 	return &category, err
 }
 

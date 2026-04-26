@@ -2,9 +2,9 @@ package repository
 
 import (
 	"GoWork_9/backend/internal/model"
+	"GoWork_9/backend/internal/utils"
 	"context"
-	"fmt"
-
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -96,9 +96,17 @@ func (r *articleRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Articl
 		First(&article, id).Error
 
 	if err != nil {
-		fmt.Println("文章消失了")
+		utils.GetLogger().Error("Article not found", zap.Uint64("id", id), zap.Error(err))
 		return nil, err // 发生错误（如记录不存在）返回 nil
 	}
+
+	// 计算文章的评论数
+	var commentCount int64
+	r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("article_id = ?", article.ID).
+		Count(&commentCount)
+	article.CommentCount = uint64(commentCount)
+
 	return &article, nil
 }
 
@@ -132,6 +140,20 @@ func (r *articleRepoImpl) List(ctx context.Context, page, pageSize int, keyword 
 		Offset(offset).
 		Limit(pageSize).
 		Find(&articles).Error
+
+	if err != nil {
+		return articles, total, err
+	}
+
+	// 3. 计算每个文章的评论数
+	for i := range articles {
+		var commentCount int64
+		r.db.WithContext(ctx).Model(&model.Comment{}).
+			Where("article_id = ?", articles[i].ID).
+			Count(&commentCount)
+		articles[i].CommentCount = uint64(commentCount)
+	}
+
 	return articles, total, err
 }
 

@@ -20,7 +20,6 @@ type Comment struct {
 type CreateCommentRequest struct {
 	ArticleID uint64 `json:"article_id" binding:"required"`
 	Content   string `json:"content" binding:"required,max=500"`
-	ParentID  uint64 `json:"parent_id"`
 }
 
 // TableName 指定表名为 comments

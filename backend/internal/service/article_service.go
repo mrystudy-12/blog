@@ -3,9 +3,11 @@ package service
 import (
 	"GoWork_9/backend/internal/model"
 	"GoWork_9/backend/internal/repository"
+	"GoWork_9/backend/internal/utils"
 	"context"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"os"
@@ -13,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
+	"go.uber.org/zap"
 )
 
 var (
@@ -36,7 +38,7 @@ type ArticleService interface {
 	Delete(ctx context.Context, id uint64) error
 
 	// HandleImageUpload 处理图片上传
-	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64, baseURl string) (string, error)
+	HandleImageUpload(ctx context.Context, file *multipart.FileHeader, userID uint64, baseURL string) (string, error)
 }
 
 type articleServiceImpl struct {
@@ -50,7 +52,7 @@ const articleImagePath = "frontend/static/images/articles"
 func getImagesPath() string {
 	// 获取当前工作目录 (假设在 backend 目录下运行)
 	wd, err := os.Getwd()
-	fmt.Println(">>> 当前工作目录 WD:", wd)
+	utils.GetLogger().Debug("Current working directory", zap.String("wd", wd))
 	if err != nil {
 		return articleImagePath
 	}
@@ -62,7 +64,7 @@ func getImagesPath() string {
 	// 如果在 backend 目录下运行，只需要向上跳一级到项目根目录
 	// D:\GoWork_9\backend -> D:\GoWork_9 -> D:\GoWork_9\frontend\...
 	//path := filepath.Join(wd, "..", "frontend", "static", "images", "articles")
-	fmt.Println(">>> 尝试保存图片的绝对路径为:", path) // 在后端控制台查看输出
+	utils.GetLogger().Debug("Attempting to save image", zap.String("path", path))
 	return path
 }
 
@@ -132,7 +134,7 @@ func (s *articleServiceImpl) GetAdminDetail(ctx context.Context, id uint64) (*mo
 func (s *articleServiceImpl) GetPortalDetail(ctx context.Context, id uint64) (*model.Article, error) {
 	article, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		fmt.Println("这个问题在这里有问题", err)
+		utils.GetLogger().Error("Failed to get portal article detail", zap.Error(err))
 		return nil, ErrArticleNotFound
 	}
 
@@ -218,7 +220,7 @@ func (s *articleServiceImpl) Update(ctx context.Context, id uint64, req model.Up
 				filename := filepath.Base(url)
 				fullPath := filepath.Join(basePath, filename)
 				if err := os.Remove(fullPath); err != nil {
-					fmt.Printf("警告：物理删除文件失败 [%s]: %v\n", fullPath, err)
+					utils.GetLogger().Warn("Failed to delete physical file", zap.String("path", fullPath), zap.Error(err))
 				}
 			}
 			// B. 数据库解绑 (article_id 置 0)
@@ -281,7 +283,7 @@ func (s *articleServiceImpl) Delete(ctx context.Context, id uint64) error {
 			if err := os.Remove(fullPath); err != nil {
 				// 物理删除失败仅记录警告，不回滚已提交的数据库事务
 				if !os.IsNotExist(err) {
-					fmt.Printf("警告：删除文章图片物理文件失败 [%s]: %v\n", fullPath, err)
+					utils.GetLogger().Warn("Failed to delete article image file", zap.String("path", fullPath), zap.Error(err))
 				}
 			}
 		}
@@ -321,7 +323,7 @@ func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multip
 	defer func(src multipart.File) {
 		err := src.Close()
 		if err != nil {
-			fmt.Printf("关闭失败1")
+			utils.GetLogger().Warn("Failed to close file", zap.Error(err))
 		}
 	}(src)
 
@@ -334,15 +336,16 @@ func (s *articleServiceImpl) HandleImageUpload(ctx context.Context, file *multip
 	if _, err := io.Copy(dst, src); err != nil {
 		err := dst.Close()
 		if err != nil {
-			return "关闭失败2", err
+			utils.GetLogger().Warn("Failed to close dst", zap.Error(err))
 		}
-		return "写入失败", err
+		return "", fmt.Errorf("写入文件失败: %w", err)
 	}
 	_ = dst.Sync() // 强制刷入磁盘
 	err = dst.Close()
 	if err != nil {
-		return "关闭失败3", err
-	} // 写入完成立即关闭，释放句柄
+		utils.GetLogger().Warn("Failed to close dst after sync", zap.Error(err))
+		return "", fmt.Errorf("关闭文件失败: %w", err)
+	}
 
 	// 5. 数据库记录入库
 	urlPath := baseURL + "/static/images/articles/" + newFilename

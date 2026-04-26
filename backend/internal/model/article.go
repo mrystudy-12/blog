@@ -7,20 +7,21 @@ import (
 
 // Article 代表文章模型
 type Article struct {
-	ID         uint64         `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title      string         `gorm:"size:255;not null" json:"title"`
-	Content    string         `gorm:"type:longtext;not null" json:"content"`
-	AuthorID   uint64         `gorm:"column:user_id;index" json:"user_id"`
-	CategoryID uint64         `gorm:"column:category_id;index" json:"category_id"`
-	Status     int8           `gorm:"column:status;default:0" json:"status"`
-	ViewCount  uint64         `gorm:"column:view_count;default:0" json:"view_count"`
-	CreatedAt  time.Time      `json:"created_at"`
-	UpdatedAt  time.Time      `json:"updated_at"`
-	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	ImageURLs  []string       `gorm:"-" json:"image_urls"`
-	User       User           `gorm:"foreignKey:AuthorID;references:ID" json:"user"`
-	Category   Categories     `gorm:"foreignKey:CategoryID;references:ID" json:"category"`
-	Images     []Image        `gorm:"foreignKey:ArticleID" json:"images"`
+	ID           uint64         `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title        string         `gorm:"size:255;not null" json:"title"`
+	Content      string         `gorm:"type:longtext;not null" json:"content"`
+	AuthorID     uint64         `gorm:"column:user_id;index" json:"user_id"`
+	CategoryID   uint64         `gorm:"column:category_id;index" json:"category_id"`
+	Status       int8           `gorm:"column:status;default:0" json:"status"`
+	ViewCount    uint64         `gorm:"column:view_count;default:0" json:"view_count"`
+	CommentCount uint64         `gorm:"-" json:"comment_count"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	ImageURLs    []string       `gorm:"-" json:"image_urls"`
+	User         User           `gorm:"foreignKey:AuthorID;references:ID" json:"user"`
+	Category     Categories     `gorm:"foreignKey:CategoryID;references:ID" json:"category"`
+	Images       []Image        `gorm:"foreignKey:ArticleID" json:"images"`
 }
 
 // Image 代表文章关联的图片模型

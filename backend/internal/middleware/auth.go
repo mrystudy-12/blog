@@ -3,8 +3,8 @@ package middleware
 import (
 	"GoWork_9/backend/internal/model"
 	"GoWork_9/backend/internal/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 )
@@ -56,7 +56,9 @@ func IsAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从上下文中获取 AuthJWT 存入的 role
 		role, exists := c.Get("role")
-		fmt.Println("-----------------------------", role)
+		if roleStr, ok := role.(string); ok {
+			utils.GetLogger().Debug("User role", zap.String("role", roleStr))
+		}
 		// 逻辑判断：如果角色不是管理员（假设 1 为管理员，或者判断字符串 "admin"）
 		if !exists || role != "admin" {
 			c.JSON(http.StatusForbidden, gin.H{

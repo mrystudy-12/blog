@@ -30,14 +30,14 @@ func (r *commentRepoImpl) Create(ctx context.Context, comment *model.Comment) er
 // GetByID 用于 Service 层校验和状态对比
 func (r *commentRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Comment, error) {
 	var comment model.Comment
-	err := r.db.WithContext(ctx).Where("id = ? AND is_deleted = 0", id).First(&comment).Error
+	err := r.db.WithContext(ctx).Where("id = ? AND deleted_at IS NULL", id).First(&comment).Error
 	return &comment, err
 }
 
 func (r *commentRepoImpl) GetByArticleID(ctx context.Context, articleID uint64) ([]model.Comment, error) {
 	var comments []model.Comment
 	err := r.db.WithContext(ctx).
-		Where("article_id = ? AND is_deleted = 0 AND status = 1", articleID).
+		Where("article_id = ? AND deleted_at IS NULL AND status = 1", articleID).
 		Order("created_at DESC").
 		Preload("User").
 		Find(&comments).Error
@@ -49,7 +49,7 @@ func (r *commentRepoImpl) AdminList(ctx context.Context, page, pageSize int, key
 	var comments []model.Comment
 	var total int64
 
-	db := r.db.WithContext(ctx).Model(&model.Comment{}).Where("is_deleted = 0")
+	db := r.db.WithContext(ctx).Model(&model.Comment{}).Where("deleted_at IS NULL")
 
 	if keyword != "" {
 		db = db.Where("content LIKE ?", "%"+keyword+"%")
@@ -76,7 +76,5 @@ func (r *commentRepoImpl) UpdateStatus(ctx context.Context, id uint64, status in
 }
 
 func (r *commentRepoImpl) Delete(ctx context.Context, id uint64) error {
-	return r.db.WithContext(ctx).Model(&model.Comment{}).
-		Where("id = ?", id).
-		Update("is_deleted", 1).Error
+	return r.db.WithContext(ctx).Delete(&model.Comment{}, id).Error
 }

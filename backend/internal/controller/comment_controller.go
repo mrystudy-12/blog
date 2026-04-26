@@ -5,6 +5,7 @@ import (
 	"GoWork_9/backend/internal/repository"
 	"GoWork_9/backend/internal/service"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
@@ -32,6 +33,7 @@ func (ctrl *CommentController) Create(c *gin.Context) {
 	var req model.CreateCommentRequest
 	// 1. 绑定到指定的 Request 结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println(req)
 		c.JSON(http.StatusOK, model.Result{Code: 400, Message: "参数错误"})
 		return
 	}
@@ -59,7 +61,8 @@ func (ctrl *CommentController) Create(c *gin.Context) {
 // GetByArticleID 查看文章评论列表
 // 适配 Service: GetByArticle(ctx, articleID uint64)
 func (ctrl *CommentController) GetByArticleID(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Param("aid")
+	fmt.Println("==============================================================", idStr)
 	articleID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 400, Message: "无效的文章ID"})
