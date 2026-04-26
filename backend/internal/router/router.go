@@ -13,6 +13,7 @@ func SetupRouter() *gin.Engine {
 
 	// 使用跨域中间件
 	router.Use(middleware.Cors())
+	router.Use(middleware.Logger())
 
 	// 1. 托管静态资源 (JS, CSS, Images)
 	// 访问路径: http://localhost:8080/static/...
