@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id uint64) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
+	UpdateAvatar(ctx context.Context, userID uint64, avatarURL string) error
 }
 
 type userRepoImpl struct {
@@ -50,4 +51,9 @@ func (r *userRepoImpl) GetByID(ctx context.Context, id uint64) (*model.User, err
 
 func (r *userRepoImpl) Update(ctx context.Context, user *model.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
+}
+func (r *userRepoImpl) UpdateAvatar(ctx context.Context, userID uint64, avatarURL string) error {
+	return r.db.WithContext(ctx).Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("avatar_url", avatarURL).Error
 }

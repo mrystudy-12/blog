@@ -25,6 +25,7 @@ func InitAdmin(db *gorm.DB) {
 
 type AdminController struct {
 	adminService service.AdminService // 需在 service 层定义对应的统计接口
+	userService  service.UserService
 }
 
 // NewAdminController 初始化控制器并注入 Service

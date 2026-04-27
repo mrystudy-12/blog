@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"GoWork_9/backend/internal/middleware"
 	"GoWork_9/backend/internal/model"
 	"GoWork_9/backend/internal/repository"
 	"GoWork_9/backend/internal/service"
@@ -121,4 +122,44 @@ func (ctrl *AuthController) GetMe(c *gin.Context) {
 
 	// 3. 返回 Service 封装好的 model.Result
 	c.JSON(http.StatusOK, res)
+}
+
+// UploadImage 处理用户头像上传
+func (ctrl *AuthController) UploadImage(c *gin.Context) {
+	// 1. 获取用户ID
+	userID := middleware.GetUID(c)
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, model.Result{
+			Code:    401,
+			Message: "未授权，请先登录",
+		})
+		return
+	}
+
+	// 2. 解析文件
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Result{
+			Code:    400,
+			Message: "获取上传文件失败：" + err.Error(),
+		})
+		return
+	}
+
+	// 3. 调用 Service 层处理上传逻辑
+	avatarURL, err := ctrl.userService.UploadAvatar(c.Request.Context(), userID, file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Result{
+			Code:    500,
+			Message: "上传头像失败：" + err.Error(),
+		})
+		return
+	}
+
+	// 4. 返回成功响应
+	c.JSON(http.StatusOK, model.Result{
+		Code:    200,
+		Message: "头像上传成功",
+		Data:    gin.H{"avatar_url": avatarURL},
+	})
 }

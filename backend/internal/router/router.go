@@ -55,6 +55,7 @@ func SetupRouter() *gin.Engine {
 			// 互动：仅限登录用户
 			portalUser := portal.Group("/").Use(middleware.AuthJWT())
 			{
+				portalUser.POST("/upload", controller.AuthCtrl.UploadImage)
 				portalUser.POST("/comment/add", controller.CommentCtrl.Create) // 发表评论
 				portalUser.GET("/user/me", controller.AuthCtrl.GetMe)          // 获取个人信息
 			}

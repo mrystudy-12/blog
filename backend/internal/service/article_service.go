@@ -46,25 +46,20 @@ type articleServiceImpl struct {
 	cop  repository.CommentRepository
 }
 
-const articleImagePath = "frontend/static/images/articles"
-
 // 获取项目根目录并构建图片存储路径
 func getImagesPath() string {
-	// 获取当前工作目录 (假设在 backend 目录下运行)
-	wd, err := os.Getwd()
-	utils.GetLogger().Debug("Current working directory", zap.String("wd", wd))
-	if err != nil {
-		return articleImagePath
+	// 获取当前工作目录
+	wd, _ := os.Getwd()
+	var path string
+	if filepath.Base(wd) == "backend" {
+		path = filepath.Join(wd, "..", "frontend", "static", "images", "articles")
+	} else {
+		path = filepath.Join(wd, "frontend", "static", "images", "articles")
 	}
-	path := filepath.Join(wd, "frontend", "static", "images", "articles")
 
-	if _, err := os.Stat(path); err == nil {
-		return path
+	if err := os.MkdirAll(path, 0755); err != nil {
+		utils.GetLogger().Error("Failed to create articles directory", zap.Error(err))
 	}
-	// 如果在 backend 目录下运行，只需要向上跳一级到项目根目录
-	// D:\GoWork_9\backend -> D:\GoWork_9 -> D:\GoWork_9\frontend\...
-	//path := filepath.Join(wd, "..", "frontend", "static", "images", "articles")
-	utils.GetLogger().Debug("Attempting to save image", zap.String("path", path))
 	return path
 }
 
