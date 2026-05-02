@@ -58,24 +58,25 @@ func (ctrl *CommentController) Create(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Result{Code: 200, Message: "评论成功"})
 }
 
-// GetByArticleID 查看文章评论列表
-// 适配 Service: GetByArticle(ctx, articleID uint64)
+// GetByArticleID 查看文章评论列表（分页）
 func (ctrl *CommentController) GetByArticleID(c *gin.Context) {
 	idStr := c.Param("aid")
-	fmt.Println("==============================================================", idStr)
 	articleID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 400, Message: "无效的文章ID"})
 		return
 	}
 
-	list, err := ctrl.commentService.GetByArticle(c.Request.Context(), articleID)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
+	res, err := ctrl.commentService.GetByArticle(c.Request.Context(), articleID, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 500, Message: "获取评论失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Result{Code: 200, Message: "success", Data: list})
+	c.JSON(http.StatusOK, res)
 }
 
 // ======================== 后台管理 (Admin) ========================
@@ -112,8 +113,11 @@ func (ctrl *CommentController) Audit(c *gin.Context) {
 		c.JSON(http.StatusOK, model.Result{Code: 500, Message: err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, model.Result{Code: 200, Message: "审核成功"})
+	message := "审核通过"
+	if !pass {
+		message = "评论已屏蔽"
+	}
+	c.JSON(http.StatusOK, model.Result{Code: 200, Message: message})
 }
 
 // Delete 物理删除/逻辑删除

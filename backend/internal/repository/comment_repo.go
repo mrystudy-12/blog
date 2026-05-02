@@ -9,7 +9,7 @@ import (
 type CommentRepository interface {
 	Create(ctx context.Context, comment *model.Comment) error
 	GetByID(ctx context.Context, id uint64) (*model.Comment, error) // 新增
-	GetByArticleID(ctx context.Context, articleID uint64) ([]model.Comment, error)
+	GetByArticleID(ctx context.Context, articleID uint64, page, pageSize int) ([]model.Comment, int64, error)
 	AdminList(ctx context.Context, page, pageSize int, keyword string) ([]model.Comment, int64, error)
 	UpdateStatus(ctx context.Context, id uint64, status int8) error // 新增
 	Delete(ctx context.Context, id uint64) error
@@ -34,14 +34,25 @@ func (r *commentRepoImpl) GetByID(ctx context.Context, id uint64) (*model.Commen
 	return &comment, err
 }
 
-func (r *commentRepoImpl) GetByArticleID(ctx context.Context, articleID uint64) ([]model.Comment, error) {
+func (r *commentRepoImpl) GetByArticleID(ctx context.Context, articleID uint64, page, pageSize int) ([]model.Comment, int64, error) {
 	var comments []model.Comment
-	err := r.db.WithContext(ctx).
-		Where("article_id = ? AND deleted_at IS NULL AND status = 1", articleID).
+	var total int64
+
+	db := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("article_id = ? AND deleted_at IS NULL AND status = 1", articleID)
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	err := db.Offset(offset).
+		Limit(pageSize).
 		Order("created_at DESC").
 		Preload("User").
 		Find(&comments).Error
-	return comments, err
+
+	return comments, total, err
 }
 
 // AdminList 获取后台管理评论列表（分页、支持关键词搜索）

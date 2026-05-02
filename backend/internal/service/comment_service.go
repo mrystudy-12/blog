@@ -17,7 +17,7 @@ var (
 type CommentService interface {
 	// Create 前台接口
 	Create(ctx context.Context, userID uint64, req model.CreateCommentRequest) error
-	GetByArticle(ctx context.Context, articleID uint64) ([]model.Comment, error)
+	GetByArticle(ctx context.Context, articleID uint64, page, pageSize int) (*model.Result, error)
 
 	// AdminList 后台管理接口
 	AdminList(ctx context.Context, page, pageSize int, keyword string) (*model.Result, error)
@@ -50,11 +50,26 @@ func (s *commentServiceImpl) Create(ctx context.Context, userID uint64, req mode
 	return s.repo.Create(ctx, comment)
 }
 
-// GetByArticle 获取文章评论
-// 前台调用：Repo 层必须过滤 status=1 和 is_deleted=0
-func (s *commentServiceImpl) GetByArticle(ctx context.Context, articleID uint64) ([]model.Comment, error) {
-	// 调用 Repo 层，Repo 内部应执行 Preload("User") 以便前端显示头像
-	return s.repo.GetByArticleID(ctx, articleID)
+// GetByArticle 获取文章评论（分页）
+func (s *commentServiceImpl) GetByArticle(ctx context.Context, articleID uint64, page, pageSize int) (*model.Result, error) {
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	list, total, err := s.repo.GetByArticleID(ctx, articleID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Result{
+		Code:    200,
+		Message: "success",
+		Data: gin.H{
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+			"data":      list,
+		},
+	}, nil
 }
 
 // Delete 管理员或用户执行删除
@@ -101,8 +116,10 @@ func (s *commentServiceImpl) AdminList(ctx context.Context, page, pageSize int, 
 		Code:    200,
 		Message: "success",
 		Data: gin.H{
-			"list":  list,
-			"total": total,
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+			"data":      list,
 		},
 	}, nil
 }

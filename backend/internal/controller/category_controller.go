@@ -64,17 +64,27 @@ func (ctrl *CategoryController) Create(c *gin.Context) {
 
 // Update 更新分类
 func (ctrl *CategoryController) Update(c *gin.Context) {
-	var category model.Categories // 统一使用单数
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, model.Result{Code: 400, Message: "无效的分类ID"})
+		return
+	}
+
+	var category model.Categories
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 400, Message: "参数错误"})
 		return
 	}
+
+	category.ID = id
 
 	if err := ctrl.categoryService.Update(c.Request.Context(), &category); err != nil {
 		c.JSON(http.StatusOK, model.Result{Code: 500, Message: "更新失败: " + err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, model.Result{Code: 200, Message: "更新成功"})
+
 }
 
 func (ctrl *CategoryController) Delete(c *gin.Context) {

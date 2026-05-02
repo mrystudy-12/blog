@@ -29,7 +29,11 @@ type UserService interface {
 	Register(ctx context.Context, username, password, email string) (*model.User, error)
 	Login(ctx context.Context, username, password string) (*model.User, error)
 	GetUserInfo(ctx context.Context, id uint64) (*model.Result, error)
-	UploadAvatar(ctx context.Context, id uint64, file *multipart.FileHeader) (string, error)
+	GetProfile(ctx context.Context, id uint64) (*model.User, error)
+	UpdateProfile(ctx context.Context, id uint64, req model.UpdateProfileRequest) (*model.User, error)
+	UploadAvatar(id uint64, file *multipart.FileHeader) (string, error)
+	GetUserList(ctx context.Context, page, pageSize int) ([]*model.User, int64, error)
+	UpdateUserStatus(ctx context.Context, userID uint64, status int) error
 }
 
 type userServiceImpl struct {
@@ -113,54 +117,84 @@ func (s *userServiceImpl) GetUserInfo(ctx context.Context, id uint64) (*model.Re
 	}, nil
 }
 
-// UploadAvatar 处理用户头像上传的完整业务逻辑
-func (s *userServiceImpl) UploadAvatar(ctx context.Context, userID uint64, file *multipart.FileHeader) (string, error) {
-	// 1. 基础校验：大小与格式（逻辑保持不变）
+func (s *userServiceImpl) GetProfile(ctx context.Context, id uint64) (*model.User, error) {
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *userServiceImpl) UpdateProfile(ctx context.Context, id uint64, req model.UpdateProfileRequest) (*model.User, error) {
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	if req.AvatarUrl != "" && req.AvatarUrl != user.AvatarUrl {
+		oldAvatar := user.AvatarUrl
+		user.AvatarUrl = req.AvatarUrl
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return nil, err
+		}
+		if oldAvatar != "" {
+			go s.deleteOldAvatar(oldAvatar)
+		}
+	} else {
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return nil, err
+		}
+	}
+	return user, nil
+}
+
+// UploadAvatar 处理用户头像上传，仅保存文件并返回URL
+// 数据库更新由 profile 接口统一管理
+func (s *userServiceImpl) UploadAvatar(userID uint64, file *multipart.FileHeader) (string, error) {
 	if err := s.validateImage(file); err != nil {
 		return "", err
 	}
 
-	// 2. 获取旧信息（解耦：仅为了获取旧 URL 用于后续清理）
-	oldUser, err := s.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", ErrUserNotFound
-		}
-		return "", fmt.Errorf("获取用户信息失败: %w", err)
-	}
-
-	// 3. 准备存储路径（使用你创建的 utils）
-	// 传入 "avatars" 自动处理 backend 目录判断与文件夹创建
 	saveDir, err := utils.GetSavePath("avatars")
 	if err != nil {
 		return "", fmt.Errorf("无法准备存储目录: %w", err)
 	}
 
-	// 4. 生成唯一文件名并构建物理全路径
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	newFilename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), userID, ext)
 	fullFilePath := filepath.Join(saveDir, newFilename)
 
-	// 5. 保存物理文件（建议将保存逻辑封装，保持主流程清晰）
 	if err := s.saveFileToDisk(file, fullFilePath); err != nil {
 		return "", err
 	}
 
-	// 6. 构建访问 URL（使用你创建的 utils）
 	avatarURL := utils.GetAccessURL("avatars", newFilename)
-
-	// 7. 更新数据库
-	if err := s.userRepo.UpdateAvatar(ctx, userID, avatarURL); err != nil {
-		_ = os.Remove(fullFilePath) // 数据库更新失败，回滚清理刚上传的文件
-		return "", fmt.Errorf("更新数据库失败，已清理物理文件: %w", err)
-	}
-
-	// 8. 异步删除旧头像
-	if oldUser.AvatarUrl != "" {
-		go s.deleteOldAvatar(oldUser.AvatarUrl)
-	}
-
 	return avatarURL, nil
+}
+
+func (s *userServiceImpl) GetUserList(ctx context.Context, page, pageSize int) ([]*model.User, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	users, total, err := s.userRepo.ListUsers(ctx, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
 // deleteOldAvatar 删除旧的头像文件
@@ -231,4 +265,26 @@ func (s *userServiceImpl) saveFileToDisk(file *multipart.FileHeader, destPath st
 
 	_ = dst.Sync() // 确保落盘
 	return dst.Close()
+}
+
+func (s *userServiceImpl) UpdateUserStatus(ctx context.Context, userID uint64, status int) error {
+	// 1. 验证用户是否存在
+	_, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	// 2. 验证状态值是否合法（0: 禁用, 1: 正常）
+	if status != 0 && status != 1 {
+		return fmt.Errorf("无效的状态值: %d", status)
+	}
+
+	// 3. 不允许禁用自己
+	// 注意：这里需要在 Controller 层传入当前管理员ID进行判断
+
+	// 4. 更新状态
+	return s.userRepo.UpdateStatus(ctx, userID, status)
 }

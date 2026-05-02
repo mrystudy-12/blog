@@ -55,9 +55,11 @@ func SetupRouter() *gin.Engine {
 			// 互动：仅限登录用户
 			portalUser := portal.Group("/").Use(middleware.AuthJWT())
 			{
-				portalUser.POST("/upload", controller.AuthCtrl.UploadImage)
-				portalUser.POST("/comment/add", controller.CommentCtrl.Create) // 发表评论
-				portalUser.GET("/user/me", controller.AuthCtrl.GetMe)          // 获取个人信息
+				portalUser.POST("/upload", controller.AuthCtrl.UploadImage)        //头像上传
+				portalUser.POST("/comment/add", controller.CommentCtrl.Create)     // 发表评论
+				portalUser.GET("/user/me", controller.AuthCtrl.GetMe)              // 获取个人信息
+				portalUser.GET("/user/profile", controller.AuthCtrl.GetProfile)    // 获取用户资料
+				portalUser.PUT("/user/profile", controller.AuthCtrl.UpdateProfile) // 更新用户资料
 			}
 		}
 
@@ -96,6 +98,12 @@ func SetupRouter() *gin.Engine {
 				comment.GET("/list", controller.CommentCtrl.AdminList)       // 全站评论审核列表
 				comment.PUT("/audit/:id", controller.CommentCtrl.Audit)      // 审核评论(通过/隐藏)
 				comment.DELETE("/delete/:id", controller.CommentCtrl.Delete) // 违规物理删除
+			}
+			user := admin.Group("/users")
+			{
+				user.GET("/list", controller.AuthCtrl.GetUserList)            //获取用户列表
+				user.PUT("/:id/status", controller.AuthCtrl.UpdateUserStatus) // 更新用户状态
+
 			}
 		}
 	}

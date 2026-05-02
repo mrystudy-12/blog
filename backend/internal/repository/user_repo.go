@@ -13,6 +13,8 @@ type UserRepository interface {
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
 	UpdateAvatar(ctx context.Context, userID uint64, avatarURL string) error
+	ListUsers(ctx context.Context, page, pageSize int) ([]*model.User, int64, error)
+	UpdateStatus(ctx context.Context, userID uint64, status int) error
 }
 
 type userRepoImpl struct {
@@ -56,4 +58,29 @@ func (r *userRepoImpl) UpdateAvatar(ctx context.Context, userID uint64, avatarUR
 	return r.db.WithContext(ctx).Model(&model.User{}).
 		Where("id = ?", userID).
 		Update("avatar_url", avatarURL).Error
+}
+
+func (r *userRepoImpl) ListUsers(ctx context.Context, page, pageSize int) ([]*model.User, int64, error) {
+	var users []*model.User
+	var total int64
+
+	// 计算总数
+	if err := r.db.WithContext(ctx).Model(&model.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询，按 ID 降序排列
+	offset := (page - 1) * pageSize
+	if err := r.db.WithContext(ctx).Order("id DESC").Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
+// UpdateStatus 更新用户状态
+func (r *userRepoImpl) UpdateStatus(ctx context.Context, userID uint64, status int) error {
+	return r.db.WithContext(ctx).Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("status", status).Error
 }
