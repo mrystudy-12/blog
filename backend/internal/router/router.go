@@ -20,10 +20,6 @@ func SetupRouter() *gin.Engine {
 	// 物理路径: ./frontend/static
 	router.Static("/static", "./frontend/static")
 
-	// 2. 托管 HTML 页面 (View 目录)
-	// 访问路径: http://localhost:8080/view/...
-	router.StaticFS("/view", http.Dir("./frontend/view"))
-
 	// 3. 配置根目录重定向或直接访问 (可选)
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/view/admin/go.html")

@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    container_name: blog_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "231792"
+      MYSQL_DATABASE: "blog"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: .
+    container_name: blog_backend
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    volumes:
+      # 映射宿主机目录到容器，持久化用户头像和文章图片
+      - ./frontend/static/images:/app/frontend/static/images
+
+volumes:
+  mysql_data:

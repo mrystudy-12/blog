@@ -1,13 +1,13 @@
 database:
   driver: "mysql"
-  dsn: "root:231792@tcp(localhost:3306)/blog?charset=utf8mb4&parseTime=True&loc=Local"
+  dsn: "root:123456@tcp(8.148.66.116:3306)/blog?charset=utf8mb4&parseTime=True&loc=Local"
   max_idle: 10
   max_open: 100
   life_time: 1
 server:
   port: "8080"
-  base_url: "http://localhost:8080"
+  base_url: "http://8.148.66.116:8080"
 storage:
-  local_root: "../frontend/static/images" # 所有图片的根目录
-  avatar_dir: "avatars"                  # 头像子文件夹
-  article_dir: "articles"                # 文章图片子文件夹
+  local_root: "/view/static/images"
+  avatar_dir: "avatars"
+  article_dir: "articles"
