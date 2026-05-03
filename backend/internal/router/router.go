@@ -4,7 +4,6 @@ import (
 	"GoWork_9/backend/internal/controller"
 	"GoWork_9/backend/internal/middleware"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // SetupRouter 配置所有路由
@@ -18,12 +17,7 @@ func SetupRouter() *gin.Engine {
 	// 1. 托管静态资源 (JS, CSS, Images)
 	// 访问路径: http://localhost:8080/static/...
 	// 物理路径: ./frontend/static
-	router.Static("/static", "./frontend/static")
-
-	// 3. 配置根目录重定向或直接访问 (可选)
-	router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/view/admin/go.html")
-	})
+	router.Static("/static", "/root/frontend/static")
 
 	v1 := router.Group("/api/v1")
 	{
@@ -66,8 +60,6 @@ func SetupRouter() *gin.Engine {
 		{
 			// 系统统计
 			admin.GET("/dashboard", controller.AdminCtrl.GetStats)
-			//图片上传
-			admin.POST("/upload", controller.ArticleCtrl.UploadImage)
 			// 文章管理
 			article := admin.Group("/articles")
 			{
