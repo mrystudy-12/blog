@@ -9,7 +9,7 @@ import (
 	"GoWork_9/backend/pkg/db"
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,12 +26,12 @@ func main() {
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		if err != nil {
-			log.Fatal("日志初始化，失败")
+			fmt.Printf("Warning: logger sync failed: %v\n", err)
 		}
 	}(logger)
 
 	// 2. 初始化配置
-	if err := config.LoadConfig("backend/internal/config/config.yaml"); err != nil {
+	if err := config.LoadConfig("/root/config.yaml"); err != nil {
 		logger.Warn("Load config failed, using default", zap.Error(err))
 		config.InitDefaultConfig()
 	}
