@@ -17,7 +17,7 @@ func SetupRouter() *gin.Engine {
 	// 1. 托管静态资源 (JS, CSS, Images)
 	// 访问路径: http://localhost:8080/static/...
 	// 物理路径: ./frontend/static
-	router.Static("/static", "/root/frontend/static")
+	router.Static("/static", "./frontend/static")
 
 	v1 := router.Group("/api/v1")
 	{
